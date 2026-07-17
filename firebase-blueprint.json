@@ -1,0 +1,114 @@
+{
+  "entities": {
+    "ContactSubmission": {
+      "title": "ContactSubmission",
+      "description": "Information from a partnership application or contact form",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "email": { "type": "string", "minLength": 3, "maxLength": 100 },
+        "budget": { "type": "string", "maxLength": 50 },
+        "launchDate": { "type": "string", "maxLength": 50 },
+        "message": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "object", "description": "Server Timestamp" }
+      },
+      "required": ["name", "email", "budget"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A direct message between client and developer/AI in the portal",
+      "type": "object",
+      "properties": {
+        "sender": { "type": "string", "enum": ["client", "ai"] },
+        "text": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "createdAt": { "type": "object", "description": "Server Timestamp" }
+      },
+      "required": ["sender", "text"]
+    },
+    "SaleLog": {
+      "title": "SaleLog",
+      "description": "Record of a simulated platform sale shown in client portal telemetry",
+      "type": "object",
+      "properties": {
+        "customer": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "object", "description": "Server Timestamp" }
+      },
+      "required": ["customer", "amount", "type"]
+    },
+    "MonthlyMetric": {
+      "title": "MonthlyMetric",
+      "description": "Monthly aggregated business telemetry for project lead conversions, visitor traffic, and growth",
+      "type": "object",
+      "properties": {
+        "month": { "type": "string", "minLength": 3, "maxLength": 20 },
+        "leads": { "type": "number" },
+        "conversions": { "type": "number" },
+        "visitors": { "type": "number" },
+        "growth": { "type": "number" },
+        "revenue": { "type": "number" },
+        "createdAt": { "type": "object", "description": "Server Timestamp" }
+      },
+      "required": ["month", "leads", "conversions", "visitors", "growth", "revenue"]
+    },
+    "DeliverableApproval": {
+      "title": "DeliverableApproval",
+      "description": "A design mockup or milestone deliverable review pending approval or changes feedback",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["pending", "approved", "changes_requested"] },
+        "feedback": { "type": "string", "maxLength": 1000 },
+        "approvedBy": { "type": "string", "maxLength": 100 },
+        "submittedAt": { "type": "object", "description": "Server Timestamp" },
+        "updatedAt": { "type": "object", "description": "Server Timestamp" }
+      },
+      "required": ["title", "category", "status"]
+    },
+    "EmailNotification": {
+      "title": "EmailNotification",
+      "description": "An automated email notification triggered and dispatched to the project manager",
+      "type": "object",
+      "properties": {
+        "to": { "type": "string", "minLength": 3, "maxLength": 100 },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "body": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "deliverableId": { "type": "string", "maxLength": 100 },
+        "deliverableTitle": { "type": "string", "maxLength": 150 },
+        "status": { "type": "string", "enum": ["sent", "pending"] },
+        "action": { "type": "string", "enum": ["approved", "changes_requested"] },
+        "createdAt": { "type": "object", "description": "Server Timestamp" }
+      },
+      "required": ["to", "subject", "body", "status", "action"]
+    }
+  },
+  "firestore": {
+    "contact_submissions/{submissionId}": {
+      "schema": "ContactSubmission",
+      "description": "Collection of direct partnership submissions"
+    },
+    "chats/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Collection of interactive messages in direct feed"
+    },
+    "sales/{saleId}": {
+      "schema": "SaleLog",
+      "description": "Collection of actual/simulated sales logs in dashboard telemetry"
+    },
+    "analytics_metrics/{metricId}": {
+      "schema": "MonthlyMetric",
+      "description": "Monthly historical performance records for lead conversions, traffic, and growth"
+    },
+    "approvals/{approvalId}": {
+      "schema": "DeliverableApproval",
+      "description": "Collection of designs and deliverables submitted for client approval or feedback"
+    },
+    "emails/{emailId}": {
+      "schema": "EmailNotification",
+      "description": "Collection of automated notification emails triggered by deliverable approvals or rejections"
+    }
+  }
+}

@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Custom Color Tokens defined in Master Product Spec Volume 1.0 */
+  --color-primary-navy: #071E4A;
+  --color-secondary-navy: #0C2D70;
+  --color-deep-black: #030817;
+  --color-brand-orange: #FF7A00;
+  --color-bright-orange: #FF9D1F;
+  --color-spec-gray: #F6F8FA;
+  --color-spec-border: #E8EDF3;
+  --color-spec-success: #16C784;
+  --color-spec-warning: #F59E0B;
+  --color-spec-danger: #EF4444;
+
+  /* Spacing system matching Volume 1.0 specifications */
+  --spacing-8: 8px;
+  --spacing-16: 16px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-48: 48px;
+  --spacing-64: 64px;
+  --spacing-96: 96px;
+  --spacing-128: 128px;
+
+  /* Border radius matching Volume 3 Master Specification */
+  --radius-card-24: 24px;
+  --radius-button-18: 18px;
+  --radius-input-16: 16px;
+  --radius-image-32: 32px;
+  --radius-dialog-32: 32px;
+  --radius-card-20: 20px;
+  --radius-button-16: 16px;
+  --radius-input-14: 14px;
+  --radius-image-24: 24px;
+  --radius-dialog-28: 28px;
+}
+
+/* Custom visual utilities & animations */
+@utility bg-gradient-radial {
+  background-image: radial-gradient(var(--tw-gradient-stops));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #030817;
+  color: #FFFFFF;
+}
+
+/* Scrollbar customization matches ultra-premium sleek layout */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #030817;
+}
+::-webkit-scrollbar-thumb {
+  background: #071E4A;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FF7A00;
+}

@@ -1,0 +1,171 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net: default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- REUSABLE GLOBAL HELPERS ---
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    function incoming() { 
+      return request.resource.data; 
+    }
+    
+    function existing() { 
+      return resource.data; 
+    }
+    
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+
+    // --- ENTITY VALIDATION HELPERS ---
+
+    // ContactSubmission Entity Validator
+    function isValidContactSubmission(data) {
+      return data.name is string 
+        && data.name.size() >= 1 
+        && data.name.size() <= 100
+        && data.email is string 
+        && data.email.size() >= 3 
+        && data.email.size() <= 100
+        && data.budget is string 
+        && data.budget.size() <= 50
+        && (!('launchDate' in data) || (data.launchDate is string && data.launchDate.size() <= 50))
+        && (!('message' in data) || (data.message is string && data.message.size() <= 1000))
+        && data.keys().hasAll(['name', 'email', 'budget'])
+        && data.keys().size() <= 6;
+    }
+
+    // ChatMessage Entity Validator
+    function isValidChatMessage(data) {
+      return data.sender is string 
+        && (data.sender == 'client' || data.sender == 'ai')
+        && data.text is string 
+        && data.text.size() >= 1 
+        && data.text.size() <= 500
+        && data.keys().hasAll(['sender', 'text'])
+        && data.keys().size() <= 4;
+    }
+
+    // SaleLog Entity Validator
+    function isValidSaleLog(data) {
+      return data.customer is string 
+        && data.customer.size() >= 1 
+        && data.customer.size() <= 100
+        && (data.amount is int || data.amount is float)
+        && data.amount >= 0
+        && data.type is string 
+        && data.type.size() <= 100
+        && data.keys().hasAll(['customer', 'amount', 'type'])
+        && data.keys().size() <= 5;
+    }
+
+    // MonthlyMetric Entity Validator
+    function isValidMonthlyMetric(data) {
+      return data.month is string 
+        && data.month.size() >= 3 
+        && data.month.size() <= 20
+        && (data.leads is int || data.leads is float)
+        && data.leads >= 0
+        && (data.conversions is int || data.conversions is float)
+        && data.conversions >= 0
+        && (data.visitors is int || data.visitors is float)
+        && data.visitors >= 0
+        && (data.growth is int || data.growth is float)
+        && (data.revenue is int || data.revenue is float)
+        && data.revenue >= 0
+        && data.keys().hasAll(['month', 'leads', 'conversions', 'visitors', 'growth', 'revenue'])
+        && data.keys().size() <= 8;
+    }
+
+    // DeliverableApproval Entity Validator
+    function isValidDeliverableApproval(data) {
+      return data.title is string 
+        && data.title.size() >= 1 
+        && data.title.size() <= 100
+        && data.category is string 
+        && data.category.size() >= 1 
+        && data.category.size() <= 50
+        && (!('description' in data) || (data.description is string && data.description.size() <= 1000))
+        && data.status is string 
+        && (data.status == 'pending' || data.status == 'approved' || data.status == 'changes_requested')
+        && (!('feedback' in data) || (data.feedback is string && data.feedback.size() <= 1000))
+        && (!('approvedBy' in data) || (data.approvedBy is string && data.approvedBy.size() <= 100))
+        && data.keys().hasAll(['title', 'category', 'status'])
+        && data.keys().size() <= 9;
+    }
+
+    // EmailNotification Entity Validator
+    function isValidEmailNotification(data) {
+      return data.to is string 
+        && data.to.size() >= 3 
+        && data.to.size() <= 100
+        && data.subject is string 
+        && data.subject.size() >= 1 
+        && data.subject.size() <= 200
+        && data.body is string 
+        && data.body.size() >= 1 
+        && data.body.size() <= 2000
+        && (!('deliverableId' in data) || (data.deliverableId is string && data.deliverableId.size() <= 100))
+        && (!('deliverableTitle' in data) || (data.deliverableTitle is string && data.deliverableTitle.size() <= 150))
+        && data.status is string 
+        && (data.status == 'sent' || data.status == 'pending')
+        && data.action is string 
+        && (data.action == 'approved' || data.action == 'changes_requested')
+        && data.keys().hasAll(['to', 'subject', 'body', 'status', 'action'])
+        && data.keys().size() <= 8;
+    }
+
+    // --- PATH MATCHING AND ACCESS CONTROLS ---
+
+    // 1. Contact Submissions: Write-Only for public/guests
+    match /contact_submissions/{submissionId} {
+      allow create: if isValidId(submissionId) && isValidContactSubmission(incoming());
+      allow get, list, update, delete: if false;
+    }
+
+    // 2. Chat Feed Messages: Read/Write for anyone participating in the sandbox/demo
+    match /chats/{messageId} {
+      allow create: if isValidId(messageId) && isValidChatMessage(incoming());
+      allow list, get: if true;
+      allow update, delete: if false; // Immutability guarantee
+    }
+
+    // 3. Platform Sales Telemetry: Read/Write for anyone participating in the sandbox/demo
+    match /sales/{saleId} {
+      allow create: if isValidId(saleId) && isValidSaleLog(incoming());
+      allow list, get: if true;
+      allow update, delete: if false; // Immutability guarantee
+    }
+
+    // 4. Monthly Analytics Metrics: Read/Write for sandbox telemetry and demo charting
+    match /analytics_metrics/{metricId} {
+      allow create, update: if isValidId(metricId) && isValidMonthlyMetric(incoming());
+      allow list, get: if true;
+      allow delete: if false; // Immutability/retention guarantee
+    }
+
+    // 5. Deliverable Approvals: Read/Write for anyone participating in the sandbox/demo
+    match /approvals/{approvalId} {
+      allow create: if isValidId(approvalId) && isValidDeliverableApproval(incoming());
+      allow get, list: if true;
+      allow update: if isValidId(approvalId) && isValidDeliverableApproval(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'feedback', 'approvedBy', 'updatedAt'])
+      );
+      allow delete: if false;
+    }
+
+    // 6. Automated Email Notifications Queue
+    match /emails/{emailId} {
+      allow create: if isValidId(emailId) && isValidEmailNotification(incoming());
+      allow get, list: if true;
+      allow update, delete: if false; // Immutability guarantee
+    }
+  }
+}
