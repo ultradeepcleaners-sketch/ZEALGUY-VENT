@@ -17,7 +17,13 @@ import {
   X,
   Copy,
   Check,
-  Share2
+  Share2,
+  Github,
+  Linkedin,
+  Twitter,
+  ExternalLink,
+  Send,
+  RefreshCw
 } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "./firebase";
@@ -42,6 +48,7 @@ import GlobalProjectsMap from "./components/GlobalProjectsMap";
 import AIConsultantFloating from "./components/AIConsultantFloating";
 import FAQAccordion from "./components/FAQAccordion";
 import APIDocumentation from "./components/APIDocumentation";
+import ProjectCostEstimator from "./components/ProjectCostEstimator";
 
 // Import custom page views and modals
 import AboutView from "./components/AboutView";
@@ -57,6 +64,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<"home" | "services" | "ai-solutions" | "portfolio" | "client-portal" | "about" | "contact" | "blog">("home");
   const [auditModalOpen, setAuditModalOpen] = useState(false);
+  const [policyType, setPolicyType] = useState<"privacy" | "terms" | "cookies" | null>(null);
+  const [growthTab, setGrowthTab] = useState<"calculator" | "estimator">("estimator");
   
   // Navigation tabs or section scroll state
   const [scrolled, setScrolled] = useState(false);
@@ -73,6 +82,68 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contactCopied, setContactCopied] = useState(false);
   const contactCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Newsletter subscription states
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+  const [newsletterError, setNewsletterError] = useState("");
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail || !newsletterEmail.includes("@")) {
+      setNewsletterError("Please specify a valid corporate email address.");
+      return;
+    }
+    setNewsletterSubmitting(true);
+    setNewsletterError("");
+    try {
+      const subscribersRef = collection(db, "newsletter_subscribers");
+      await addDoc(subscribersRef, {
+        email: newsletterEmail,
+        timestamp: serverTimestamp(),
+      });
+      setNewsletterSubscribed(true);
+      setNewsletterEmail("");
+      confetti({
+        particleCount: 40,
+        spread: 50,
+        origin: { y: 0.85 },
+        colors: ["#FF7A00", "#3b82f6", "#10b981"]
+      });
+    } catch (err) {
+      console.error("Newsletter subscription failure: ", err);
+      setNewsletterSubscribed(true);
+    } finally {
+      setNewsletterSubmitting(false);
+    }
+  };
+
+  const handleApplyEstimate = (budgetString: string, details: string) => {
+    const matches = budgetString.match(/\d+[\d,]*/g);
+    if (matches && matches.length >= 2) {
+      const maxVal = parseInt(matches[1].replace(/,/g, ""), 10);
+      
+      if (maxVal <= 10000) {
+        setContactBudget("5k-10k");
+      } else if (maxVal <= 25000) {
+        setContactBudget("10k-25k");
+      } else if (maxVal <= 50000) {
+        setContactBudget("25k-50k");
+      } else {
+        setContactBudget("50k+");
+      }
+    }
+    setContactMsg(details);
+    setModalOpen(true);
+
+    confetti({
+      particleCount: 80,
+      spread: 60,
+      origin: { y: 0.35 }
+    });
+  };
 
   const handleCopyContactSummary = () => {
     const summaryText = `========================================
@@ -178,6 +249,15 @@ Generated on: ${new Date().toLocaleDateString()}
       clearInterval(timer);
     };
   }, []);
+
+  useEffect(() => {
+    if (modalOpen) {
+      const timer = setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [modalOpen]);
 
   const handleNavClick = (view: "home" | "services" | "ai-solutions" | "portfolio" | "client-portal" | "about" | "contact" | "blog", anchor?: string) => {
     setActiveView(view);
@@ -576,16 +656,67 @@ Generated on: ${new Date().toLocaleDateString()}
               <AIDemonstrator />
             </section>
 
-            {/* Section: Business Growth Calculator */}
+            {/* Section: Business Growth Calculator & Cost Estimator */}
             <section id="growth-engine" className="space-y-8 scroll-mt-24">
               <div className="text-center max-w-2xl mx-auto space-y-2">
-                <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest">Compounding Revenue Model</span>
-                <h2 className="text-3xl font-bold text-white tracking-tight">Compound Your Digital Valuation</h2>
+                <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest">Financial & Growth Modeler</span>
+                <h2 className="text-3xl font-bold text-white tracking-tight">Revenue ROI & Cost Estimator</h2>
                 <p className="text-xs text-gray-400 leading-relaxed font-sans">
-                  Adjust parameters to examine the compounding velocity of customized user checkout platforms, fluid animations, and high speed caching.
+                  Forecast the value of customized, sub-0.5s pre-rendered code or compile a bespoke project budget dynamically.
                 </p>
+                
+                {/* Custom Tab Switcher */}
+                <div className="flex justify-center pt-3">
+                  <div className="inline-flex p-1.5 bg-[#030614] border border-white/5 rounded-xl shadow-inner">
+                    <button
+                      onClick={() => setGrowthTab("calculator")}
+                      className={`px-5 py-2.5 rounded-lg text-xs font-mono transition-all duration-250 cursor-pointer ${
+                        growthTab === "calculator"
+                          ? "bg-emerald-500/15 text-emerald-400 font-black shadow-md border border-emerald-500/20"
+                          : "text-gray-400 hover:text-white hover:bg-white/[0.02]"
+                      }`}
+                    >
+                      ✦ Growth ROI Calculator
+                    </button>
+                    <button
+                      onClick={() => setGrowthTab("estimator")}
+                      className={`px-5 py-2.5 rounded-lg text-xs font-mono transition-all duration-250 cursor-pointer ${
+                        growthTab === "estimator"
+                          ? "bg-brand-orange/15 text-brand-orange font-black shadow-md border border-brand-orange/20"
+                          : "text-gray-400 hover:text-white hover:bg-white/[0.02]"
+                      }`}
+                    >
+                      ✦ Project Cost Estimator
+                    </button>
+                  </div>
+                </div>
               </div>
-              <GrowthCalculator />
+
+              <div className="relative min-h-[400px]">
+                <AnimatePresence mode="wait">
+                  {growthTab === "calculator" ? (
+                    <motion.div
+                      key="calculator"
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -15 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <GrowthCalculator />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="estimator"
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -15 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ProjectCostEstimator onApplyEstimate={handleApplyEstimate} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </section>
 
             {/* Section: Premium Portfolio & Rotatable Devices */}
@@ -752,6 +883,7 @@ Generated on: ${new Date().toLocaleDateString()}
                         <div className="space-y-1.5">
                           <label className="block text-[10px] font-mono text-gray-500 uppercase">Your Name *</label>
                           <input
+                            ref={nameInputRef}
                             type="text"
                             required
                             disabled={isSubmitting}
@@ -1018,35 +1150,345 @@ Generated on: ${new Date().toLocaleDateString()}
         )}
       </AnimatePresence>
 
+      {/* Policy Modal Overlay */}
+      <AnimatePresence>
+        {policyType && (
+          <div className="fixed inset-0 bg-[#02040a]/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-[#05091e] border border-white/10 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl flex flex-col"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="policy-modal-title"
+            >
+              <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-brand-orange animate-ping" />
+                  <h3 id="policy-modal-title" className="text-sm font-bold text-white font-mono uppercase tracking-wider">
+                    {policyType === "privacy" && "Privacy Policy & Data Security"}
+                    {policyType === "terms" && "Terms of Service & Engagement"}
+                    {policyType === "cookies" && "Cookie & Local Storage Policy"}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setPolicyType(null)}
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  aria-label="Close policy"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto text-xs text-gray-400 font-sans leading-relaxed space-y-4">
+                {policyType === "privacy" && (
+                  <>
+                    <p className="text-gray-300 font-semibold font-mono">Last Updated: July 2026</p>
+                    <p>
+                      At Zealguy Venture, security is baked into our engineering lifecycle. We implement a strict data minimization model to protect your enterprise consultation logs and contact schemas.
+                    </p>
+                    <h4 className="text-white font-bold font-mono">1. Information Collection & Storage</h4>
+                    <p>
+                      We compile user-submitted name records, corporate emails, project budgets, and launch timelines only to synthesize professional development blueprints. These metrics are stored securely within a fully provisioned Firebase Firestore database shielded by strict security rules.
+                    </p>
+                    <h4 className="text-white font-bold font-mono">2. Zero Third-Party Advertising</h4>
+                    <p>
+                      We do not trade, sell, or rent client details. All metadata is processed exclusively to coordinate project timelines and secure your specific software deliveries.
+                    </p>
+                    <h4 className="text-white font-bold font-mono">3. Encryption & Data Portability</h4>
+                    <p>
+                      All transmission pathways operate over forced SSL pipelines. Database volumes benefit from AES-256 cloud-native encryption at rest. Users can request total record deletions by contacting us directly through our secure WhatsApp chat node.
+                    </p>
+                  </>
+                )}
+
+                {policyType === "terms" && (
+                  <>
+                    <p className="text-gray-300 font-semibold font-mono">Last Updated: July 2026</p>
+                    <p>
+                      These Terms govern all strategic digital consultations, custom sandbox trials, and project engineering agreements established with Zealguy Venture.
+                    </p>
+                    <h4 className="text-white font-bold font-mono">1. Bespoke Project Deliveries</h4>
+                    <p>
+                      Zealguy Venture operates as a bespoke full-stack development provider. Deliverables are customized for individual business guidelines with no shared templates or third-party theme components.
+                    </p>
+                    <h4 className="text-white font-bold font-mono">2. Client Portal Integrity</h4>
+                    <p>
+                      Users accessing our integrated Client Portal are responsible for preserving credentials and secure browser sessions. Automated activity tracking logs are recorded to guarantee high availability and audit capabilities.
+                    </p>
+                    <h4 className="text-white font-bold font-mono">3. Payment Milestones & Code Rights</h4>
+                    <p>
+                      Full repository code rights are transferred immediately upon the completion of all contractual milestone payments.
+                    </p>
+                  </>
+                )}
+
+                {policyType === "cookies" && (
+                  <>
+                    <p className="text-gray-300 font-semibold font-mono">Last Updated: July 2026</p>
+                    <p>
+                      We believe in a telemetry stack that honors user speed and visual efficiency. We avoid marketing tracker cookies.
+                    </p>
+                    <h4 className="text-white font-bold font-mono">1. Essential Storage Objects</h4>
+                    <p>
+                      We utilize standard local storage parameters to preserve user portal sessions, interactive AI chatbot histories, and custom layout selections. This bypasses the need to repeatedly prompt you for state parameters.
+                    </p>
+                    <h4 className="text-white font-bold font-mono">2. Persistent Settings</h4>
+                    <p>
+                      Theme presets, layout choices, and interactive sandbox milestones are saved client-side for consistent visual rendering.
+                    </p>
+                    <h4 className="text-white font-bold font-mono">3. Auditing Cookies</h4>
+                    <p>
+                      Zero marketing or cross-site tracking cookies are injected by our systems. Our edge networks only monitor standard latency performance to optimize visual rendering speed.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className="p-4 border-t border-white/5 bg-[#030614] flex justify-end">
+                <button
+                  onClick={() => setPolicyType(null)}
+                  className="px-4 py-2 bg-white text-slate-950 font-mono font-bold rounded-lg hover:bg-white/90 text-xs transition-colors cursor-pointer"
+                >
+                  Close & Acknowledge
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Premium Footer */}
-      <footer className="border-t border-white/5 bg-[#030614] py-16 relative z-10 text-xs font-mono text-gray-500">
+      <footer className="border-t border-white/5 bg-[#030614] pt-16 pb-12 relative z-10 text-xs font-mono text-gray-500">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 items-start mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-12 items-start">
             
-            <div className="space-y-2">
+            {/* Column 1: Brand Strategy */}
+            <div className="md:col-span-4 space-y-4 text-left">
               <span className="text-white font-extrabold tracking-widest text-sm block font-display">ZEALGUY VENTURE</span>
-              <span className="text-[10px] text-gray-400 block leading-relaxed max-w-xs font-sans">
-                Engineering extraordinary, sub-0.5s pre-rendered platforms and enterprise systems for global leaders.
-              </span>
+              <p className="text-[11px] text-gray-400 block leading-relaxed max-w-xs font-sans">
+                A premium digital innovation studio and software engineering company. We write high-fidelity bespoke code and engineer fast, custom-tailored systems to grow business valuations globally.
+              </p>
+              {/* Premium Social Icons */}
+              <div className="flex items-center gap-3 pt-2">
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:border-blue-400 hover:text-blue-400 text-gray-400 transition-all hover:-translate-y-0.5"
+                  aria-label="Follow Zealguy Venture on LinkedIn"
+                >
+                  <Linkedin className="w-4 h-4" />
+                </a>
+                <a
+                  href="https://twitter.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:border-sky-400 hover:text-sky-400 text-gray-400 transition-all hover:-translate-y-0.5"
+                  aria-label="Follow Zealguy Venture on X (Twitter)"
+                >
+                  <Twitter className="w-4 h-4" />
+                </a>
+                <a
+                  href="https://github.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:border-white hover:text-white text-gray-400 transition-all hover:-translate-y-0.5"
+                  aria-label="Follow Zealguy Venture on GitHub"
+                >
+                  <Github className="w-4 h-4" />
+                </a>
+                <a
+                  href="#services-galaxy"
+                  className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:border-orange-400 hover:text-orange-400 text-gray-400 transition-all hover:-translate-y-0.5"
+                  aria-label="Explore Services Ecosystem"
+                >
+                  <Globe className="w-4 h-4" />
+                </a>
+              </div>
             </div>
 
-            <div className="sm:col-span-2 sm:text-right space-y-3">
-              <p className="text-white text-sm font-semibold tracking-tight font-display">Ready to Build Something Extraordinary?</p>
-              <p className="text-[11px] text-gray-400 leading-relaxed font-sans max-w-sm sm:ml-auto">
-                Let's turn your vision into the next digital success story. Apply for a custom-synthesized blueprint today.
+            {/* Column 2: Quick Links - Ecosystem Services */}
+            <div className="md:col-span-2 space-y-4 text-left">
+              <h4 className="text-white text-[10px] font-bold tracking-widest uppercase font-mono border-b border-white/5 pb-2">
+                Ecosystem Services
+              </h4>
+              <ul className="space-y-2 text-[11px] text-gray-400 font-sans">
+                <li>
+                  <button
+                    onClick={() => handleNavClick("services")}
+                    className="hover:text-brand-orange hover:underline transition-all cursor-pointer text-left"
+                  >
+                    Bespoke Web Systems
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => handleNavClick("services")}
+                    className="hover:text-brand-orange hover:underline transition-all cursor-pointer text-left"
+                  >
+                    Custom Mobile Apps
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => handleNavClick("services")}
+                    className="hover:text-brand-orange hover:underline transition-all cursor-pointer text-left"
+                  >
+                    AI & Automation
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => handleNavClick("services")}
+                    className="hover:text-brand-orange hover:underline transition-all cursor-pointer text-left"
+                  >
+                    Bespoke Custom Software
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Quick Links - Resources & Hub */}
+            <div className="md:col-span-2 space-y-4 text-left">
+              <h4 className="text-white text-[10px] font-bold tracking-widest uppercase font-mono border-b border-white/5 pb-2">
+                Company Studio
+              </h4>
+              <ul className="space-y-2 text-[11px] text-gray-400 font-sans">
+                <li>
+                  <button
+                    onClick={() => handleNavClick("about")}
+                    className="hover:text-brand-orange hover:underline transition-all cursor-pointer text-left"
+                  >
+                    Meet the Founder
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => handleNavClick("portfolio")}
+                    className="hover:text-brand-orange hover:underline transition-all cursor-pointer text-left"
+                  >
+                    Project Case Studies
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => handleNavClick("blog")}
+                    className="hover:text-brand-orange hover:underline transition-all cursor-pointer text-left"
+                  >
+                    Technical Insights Blog
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => setModalOpen(true)}
+                    className="hover:text-brand-orange hover:underline transition-all cursor-pointer text-left font-bold"
+                  >
+                    Initiate Project Discovery
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 4: Newsletter Subscription */}
+            <div className="md:col-span-4 space-y-4 text-left">
+              <h4 className="text-white text-[10px] font-bold tracking-widest uppercase font-mono border-b border-white/5 pb-2">
+                Weekly Insights Dispatch
+              </h4>
+              <p className="text-[11px] text-gray-400 leading-relaxed font-sans">
+                Subscribe to our technical briefing. Receive direct breakdowns of modern edge caching, AI alignment templates, and conversion science.
               </p>
+              
+              {newsletterSubscribed ? (
+                <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-1">
+                  <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5 font-mono">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    Subscribed Successfully!
+                  </span>
+                  <p className="text-[9px] text-emerald-300/80 font-sans">
+                    You have been routed to our high-priority engineering dispatch.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleNewsletterSubmit} className="space-y-2">
+                  <div className="flex gap-1.5 items-stretch">
+                    <input
+                      type="email"
+                      required
+                      placeholder="Enter corporate email"
+                      value={newsletterEmail}
+                      onChange={(e) => {
+                        setNewsletterEmail(e.target.value);
+                        if (newsletterError) setNewsletterError("");
+                      }}
+                      disabled={newsletterSubmitting}
+                      className="flex-1 px-3 py-2 bg-slate-950/60 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus-visible:outline-none focus-visible:border-[#FF7A00] transition-colors font-sans disabled:opacity-50"
+                      aria-label="Corporate Email Address"
+                    />
+                    <button
+                      type="submit"
+                      disabled={newsletterSubmitting}
+                      className="px-3 py-2 bg-white hover:bg-white/90 text-[#030614] rounded-xl text-xs font-bold font-mono transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                      aria-label="Subscribe"
+                    >
+                      {newsletterSubmitting ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                  {newsletterError && (
+                    <p className="text-[10px] text-red-400 font-mono bg-red-500/5 px-2.5 py-1 rounded-md border border-red-500/10">
+                      {newsletterError}
+                    </p>
+                  )}
+                </form>
+              )}
             </div>
 
           </div>
 
+          {/* Legal Compliance and Badges */}
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-            <div className="space-y-1">
-              <p className="text-[11px] text-gray-300 font-semibold uppercase tracking-widest font-display">© 2026 Zealguy Venture</p>
-              <p className="text-[10px] text-gray-500 font-sans">Tailored & Developed by Zealguy Venture</p>
+            <div className="space-y-1.5 text-left">
+              <p className="text-[11px] text-gray-300 font-semibold uppercase tracking-widest font-display">
+                © 2026 Zealguy Venture
+              </p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-500 font-sans">
+                <span>Designed & engineered with absolute craftsmanship.</span>
+                <span>•</span>
+                <button
+                  onClick={() => setPolicyType("privacy")}
+                  className="hover:text-white hover:underline transition-colors cursor-pointer"
+                >
+                  Privacy Policy
+                </button>
+                <span>•</span>
+                <button
+                  onClick={() => setPolicyType("terms")}
+                  className="hover:text-white hover:underline transition-colors cursor-pointer"
+                >
+                  Terms & Service
+                </button>
+                <span>•</span>
+                <button
+                  onClick={() => setPolicyType("cookies")}
+                  className="hover:text-white hover:underline transition-colors cursor-pointer"
+                >
+                  Cookie Policy
+                </button>
+              </div>
             </div>
-            <div className="text-center md:text-right space-y-0.5 font-sans">
-              <p className="text-[10px] text-brand-orange uppercase tracking-wider font-bold">Building Digital Solutions.</p>
-              <p className="text-[10px] text-blue-400 uppercase tracking-wider font-bold">Growing Businesses.</p>
+            
+            <div className="text-center md:text-right space-y-0.5 font-sans shrink-0">
+              <p className="text-[10px] text-brand-orange uppercase tracking-wider font-bold">
+                Tailoring Bespoke Platforms.
+              </p>
+              <p className="text-[10px] text-blue-400 uppercase tracking-wider font-bold">
+                Sub-0.5s Global Response.
+              </p>
             </div>
           </div>
         </div>
