@@ -58,3 +58,73 @@ export type PageId =
   | "about"
   | "contact"
   | "blog";
+
+export interface BlogPostAuthor {
+  name: string;
+  role: string;
+  avatar: string;
+  bio?: string;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  contentType?: "Article" | "Industry Report" | "Whitepaper" | "Tutorial" | "Case Study";
+  difficulty?: "Beginner" | "Intermediate" | "Advanced" | "Architect Tier";
+  excerpt: string;
+  content: string[];
+  keyTakeaways?: string[];
+  author: BlogPostAuthor;
+  date: string;
+  updatedDate?: string;
+  readTime: string;
+  views?: number;
+  likes?: number;
+  image: string;
+  tableOfContents?: { id: string; title: string }[];
+  faq?: { question: string; answer: string }[];
+  seoMetadata?: {
+    metaTitle: string;
+    metaDescription: string;
+    keywords: string[];
+    canonicalUrl?: string;
+    ogType?: string;
+  };
+  schemaMarkup?: {
+    articleSchema: string;
+    faqSchema: string;
+    breadcrumbSchema: string;
+  };
+  cta?: {
+    title: string;
+    description: string;
+    buttonText: string;
+  };
+  citations?: string[];
+  originalityScore?: number;
+  status?: "draft" | "published" | "scheduled";
+}
+
+export interface BlogComment {
+  id: string;
+  postId: string;
+  authorName: string;
+  commentText: string;
+  createdAt: string;
+}
+
+export interface TrendItem {
+  id: string;
+  topic: string;
+  category: string;
+  businessRelevance: number;
+  searchDemand: string;
+  competition: string;
+  trendGrowth: string;
+  evergreenScore: number;
+  suggestedTitle: string;
+  summary: string;
+}
+

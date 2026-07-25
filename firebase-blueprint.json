@@ -83,6 +83,47 @@
         "createdAt": { "type": "object", "description": "Server Timestamp" }
       },
       "required": ["to", "subject", "body", "status", "action"]
+    },
+    "NewsletterSubscriber": {
+      "title": "NewsletterSubscriber",
+      "description": "Subscriber email and name for blog newsletter digests",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "minLength": 3, "maxLength": 100 },
+        "name": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "object", "description": "Server Timestamp" }
+      },
+      "required": ["email"]
+    },
+    "BlogPost": {
+      "title": "BlogPost",
+      "description": "An AI-generated or editorial article published on the Zealguy Venture platform",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "slug": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "category": { "type": "string", "maxLength": 100 },
+        "excerpt": { "type": "string", "maxLength": 1000 },
+        "content": { "type": "array", "items": { "type": "string" } },
+        "readTime": { "type": "string", "maxLength": 50 },
+        "difficulty": { "type": "string", "maxLength": 50 },
+        "image": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["draft", "published", "scheduled"] },
+        "createdAt": { "type": "object", "description": "Server Timestamp" }
+      },
+      "required": ["title", "slug", "category", "excerpt"]
+    },
+    "BlogComment": {
+      "title": "BlogComment",
+      "description": "A user or client comment on a published blog post",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "commentText": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "createdAt": { "type": "object", "description": "Server Timestamp" }
+      },
+      "required": ["postId", "authorName", "commentText"]
     }
   },
   "firestore": {
@@ -109,6 +150,18 @@
     "emails/{emailId}": {
       "schema": "EmailNotification",
       "description": "Collection of automated notification emails triggered by deliverable approvals or rejections"
+    },
+    "newsletter_subscribers/{subscriberId}": {
+      "schema": "NewsletterSubscriber",
+      "description": "Subscribers to technical digests"
+    },
+    "blog_posts/{postId}": {
+      "schema": "BlogPost",
+      "description": "Collection of published and draft blog articles"
+    },
+    "blog_comments/{commentId}": {
+      "schema": "BlogComment",
+      "description": "Collection of article reader feedback and comments"
     }
   }
 }

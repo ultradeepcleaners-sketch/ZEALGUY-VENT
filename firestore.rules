@@ -122,6 +122,16 @@ service cloud.firestore {
         && data.keys().size() <= 8;
     }
 
+    // NewsletterSubscriber Validator
+    function isValidNewsletterSubscriber(data) {
+      return data.email is string
+        && data.email.size() >= 3
+        && data.email.size() <= 100
+        && (!('name' in data) || (data.name is string && data.name.size() <= 100))
+        && data.keys().hasAll(['email'])
+        && data.keys().size() <= 3;
+    }
+
     // --- PATH MATCHING AND ACCESS CONTROLS ---
 
     // 1. Contact Submissions: Write-Only for public/guests
@@ -166,6 +176,25 @@ service cloud.firestore {
       allow create: if isValidId(emailId) && isValidEmailNotification(incoming());
       allow get, list: if true;
       allow update, delete: if false; // Immutability guarantee
+    }
+
+    // 7. Newsletter Subscribers
+    match /newsletter_subscribers/{subscriberId} {
+      allow create: if isValidId(subscriberId) && isValidNewsletterSubscriber(incoming());
+      allow get, list, update, delete: if false;
+    }
+
+    // 8. Blog Posts Collection (AI Platform & Knowledge Hub)
+    match /blog_posts/{postId} {
+      allow create, update, delete: if isValidId(postId);
+      allow get, list: if true;
+    }
+
+    // 9. Blog Comments Collection
+    match /blog_comments/{commentId} {
+      allow create: if isValidId(commentId);
+      allow get, list: if true;
+      allow update, delete: if false;
     }
   }
 }
